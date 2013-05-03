@@ -1,5 +1,8 @@
 'Iterative solver for open channel flow water depth evaluation
 
+'Force type declaration
+Option Explicit
+
 Private Const ACCURACY = 0.000000001
 Private Const INITIAL_SEED = 1
 Private Const MAX_ITER = 100
