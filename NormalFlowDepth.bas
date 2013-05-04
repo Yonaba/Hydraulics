@@ -5,7 +5,7 @@
 Option Explicit
 
 Private Const ACCURACY = 0.000000001
-Private Const INITIAL_SEED = 1
+Private Const INITIAL_SEED = 0.1
 Private Const MAX_ITER = 100
 
 'Manning Strickler derivative
