@@ -55,8 +55,8 @@ End Function
 
 Function YNRECT(Q As Double, Ks As Double, I As Double, b As Double)
   YNRECT = YNTRAPEZ(Q, Ks, I, b, 0)
-End
+End Function
 
 Function YNTRIANGLE(Q As Double, Ks As Double, I As Double, m As Double)
   YNTRIANGLE = YNTRAPEZ(Q, Ks, I, 0, m)
-End
+End Function
