@@ -87,7 +87,6 @@ Function YNCIRC(Q As Double, Ks As Double, I As Double, D As Double)
   Dim y0 As Double
   Dim iter As Integer
   Dim oldy0 As Double
-  Dim r As Double
   
   y0 = INITIAL_SEED
   iter = 0
