@@ -1,3 +1,5 @@
+Attribute VB_Name = "NormalDepth"
+
 'Iterative solver for water depth in open channel
 'Uses Manning Strickler flow formula
 
@@ -34,21 +36,18 @@ End Function
 
 'Type II section
 'Evaluates f(y)
-Private Function YnEval2(y As Double, Q As Double, Ks As Double, I As Double, D As Double)
-  YnEval2 = (1 / 64) * 8 ^ (1 / 3) * (D ^ 2 * (2 * WorksheetFunction.Acos(1 - 2 * y / D) - _
-    Sin(2 * WorksheetFunction.Acos(1 - 2 * y / D)))) ^ (5 / 3) / (D * WorksheetFunction.Acos(1 - 2 * y / D)) ^ _
-    (2 / 3) - Q / (Ks * I ^ 0.5)
+Private Function YnEval2(t As Double, Q As Double, Ks As Double, I As Double, D As Double)
+  YnEval2 = (1 / 64) * 8 ^ (1 / 3) * (D ^ 2 * (t - Sin(t))) ^ _
+    (5 / 3) * 2 ^ (2 / 3) / (D * t) ^ (2 / 3) - Q / (Ks * I ^ 0.5)
+  
 End Function
 
 'Evaluates f'(y)
-Private Function YnPrimeEval2(y As Double, D As Double)
-  YnPrimeEval2 = (5 / 192) * 8 ^ (1 / 3) * (D ^ 2 * (2 * WorksheetFunction.Acos(1 - 2 * y / D) - _
-    Sin(2 * WorksheetFunction.Acos(1 - 2 * y / D)))) ^ (2 / 3) * D ^ 2 * (4 / (D * Sqr(1 - _
-    (1 - 2 * y / D) ^ 2)) - 4 * Cos(2 * WorksheetFunction.Acos(1 - 2 * y / D)) / _
-    (D * Sqr(1 - (1 - 2 * y / D) ^ 2))) / (D * WorksheetFunction.Acos(1 - 2 * y / D)) ^ (2 / 3) - _
-    (1 / 48) * 8 ^ (1 / 3) * (D ^ 2 * (2 * WorksheetFunction.Acos(1 - 2 * y / D) - _
-    Sin(2 * WorksheetFunction.Acos(1 - 2 * y / D)))) ^ (5 / 3) * D / ((D * WorksheetFunction.Acos(1 - 2 * _
-    y / D)) ^ (5 / 3) * D * Sqr(1 - (1 - 2 * y / D) ^ 2))
+Private Function YnPrimeEval2(t As Double, D As Double)
+  YnPrimeEval2 = (5 / 192) * 8 ^ (1 / 3) * (D ^ 2 * (t - Sin(t))) ^ _
+    (2 / 3) * 2 ^ (2 / 3) * D ^ 2 * (1 - Cos(t)) / (D * t) ^ (2 / 3) - _
+    (1 / 96) * 8 ^ (1 / 3) * (D ^ 2 * (t - Sin(t))) ^ (5 / 3) * 2 ^ _
+    (2 / 3) * D / (D * t) ^ (5 / 3)
 End Function
 
 'Normal Water Depth Problem Solving
@@ -56,20 +55,19 @@ End Function
 
 'Trapezoid sections
 Function YNTRAPEZ(Q As Double, Ks As Double, I As Double, b As Double, m As Double)
-  Dim y0 As Double
+  Dim yn As Double
+  Dim oldyn As Double
   Dim iter As Integer
-  Dim oldy0 As Double
   
-  y0 = INITIAL_SEED
-  iter = 0
+  yn = INITIAL_SEED
   
   Do
-    oldy0 = y0
-    y0 = y0 - YnEval1(y0, Q, Ks, I, b, m) / YnPrimeEval1(y0, b, m)
-    iter = iter + 1
-  Loop Until (Abs(y0 - oldy0) < ACCURACY) Or (iter > MAX_ITER)
+    oldyn = yn
+    yn = yn - YnEval1(yn, Q, Ks, I, b, m) / YnPrimeEval1(yn, b, m)
+    iter = (iter Or 0) + 1
+  Loop Until (Abs(yn - oldyn) < ACCURACY) Or (iter > MAX_ITER)
   
-  YNTRAPEZ = y0
+  YNTRAPEZ = yn
 End Function
 
 'Rectangular sections
@@ -83,19 +81,23 @@ Function YNTRIANGLE(Q As Double, Ks As Double, I As Double, m As Double)
 End Function
 
 'Circular sections
+'In order to avoid an erratic behavior from the solver, we also need  here (again) a good seed
+'We will use then an approx. of the critical water as a seed to workout the water normal depth
+'See the implementation CriticalFlowDepth.bas for more details
 Function YNCIRC(Q As Double, Ks As Double, I As Double, D As Double)
-  Dim y0 As Double
+  Dim yn As Double
   Dim iter As Integer
-  Dim oldy0 As Double
+  Dim theta As Double
+  Dim oldTheta As Double
   
-  y0 = INITIAL_SEED
-  iter = 0
-
+  yn = (Q / (Q * D) ^ 0.5) ^ 0.5
+  theta = 2 * WorksheetFunction.Acos(1 - (2 * yn / D))
+  
   Do
-    oldy0 = y0
-    y0 = y0 - YnEval2(y0, Q, Ks, I, D) / YnPrimeEval2(y0, D)
-    iter = iter + 1
-  Loop Until (Abs(y0 - oldy0) < ACCURACY) Or (iter > MAX_ITER)
+    oldTheta = theta
+    theta = theta - YnEval2(theta, Q, Ks, I, D) / YnPrimeEval2(theta, D)
+    iter = (iter Or 0) + 1
+  Loop Until (Abs(theta - oldTheta) < ACCURACY) Or (iter > MAX_ITER)
   
-  YNCIRC = y0
+  YNCIRC = (D / 2) * (1 - Cos(theta / 2))
 End Function
