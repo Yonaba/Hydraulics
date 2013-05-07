@@ -21,17 +21,20 @@ Private Const MAX_ITER = 100
 
 'Type I section
 'Evaluates f(y)
-Private Function YnEval1(y As Double, Q As Double, Ks As Double, I As Double, b As Double, m As Double)
-  YnEval1 = ((y * (b + m * y)) ^ (5 / 3) / _
-    (b + 2 * y * (1 + m ^ 2) ^ 0.5) ^ (2 / 3)) - (Q / (Ks * I ^ 0.5))
+Private Function YnEval1(y As Double, Q As Double, Ks As Double, I As Double, b As Double, m1 As Double, m2 As Variant)
+  YnEval1 = (1 / 4) * 2 ^ (1 / 3) * ((2 * b + m1 * y + m2 * y) * y) ^ (5 / 3) / _
+    (b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ (2 / 3) - Q / (Ks * I ^ 0.5)
 End Function
 
 'Evaluates f'(y)
-Private Function YnPrimeEval1(y As Double, b As Double, m As Double)
-  YnPrimeEval1 = (5 / 3) * (y * (b + m * y)) ^ (2 / 3) * (b + 2 * m * y) / _
-    (b + 2 * y * (1 + m ^ 2) ^ 0.5) ^ (2 / 3) - (4 / 3) * _
-    (y * (b + m * y)) ^ (5 / 3) * (1 + m ^ 2) ^ 0.5 / (b + 2 * _
-    y * (1 + m ^ 2) ^ 0.5) ^ (5 / 3)
+Private Function YnPrimeEval1(y As Double, b As Double, m1 As Double, m2 As Variant)
+  Dim l As Double
+  Dim r As Double
+  l = 2 ^ (1 / 3) * ((2 * b + m1 * y + m2 * y) * y) ^ (2 / 3) * ((m1 + m2) * y + _
+    2 * b + m1 * y + m2 * y) / (b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ (2 / 3)
+  r = 2 ^ (1 / 3) * ((2 * b + m1 * y + m2 * y) * y) ^ (5 / 3) * ((1 + m1 ^ 2) ^ 0.5 + _
+    (1 + m2 ^ 2) ^ 0.5) / (b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ (5 / 3)
+  YnPrimeEval1 = ((5 * l) / 12) - (r / 6)
 End Function
 
 'Type II section
@@ -54,16 +57,18 @@ End Function
 'Uses Newton-Raphson method, 4th-order quadratic convergence
 
 'Trapezoid sections
-Function YNTRAPEZ(Q As Double, Ks As Double, I As Double, b As Double, m As Double)
+Function YNTRAPEZ(Q As Double, Ks As Double, I As Double, b As Double, m1 As Double, Optional m2 As Variant)
   Dim yn As Double
   Dim oldyn As Double
   Dim iter As Integer
+  
+  If IsMissing(m2) Then m2 = m1
   
   yn = INITIAL_SEED
   
   Do
     oldyn = yn
-    yn = yn - YnEval1(yn, Q, Ks, I, b, m) / YnPrimeEval1(yn, b, m)
+    yn = yn - YnEval1(yn, Q, Ks, I, b, m1, m2) / YnPrimeEval1(yn, b, m1, m2)
     iter = (iter Or 0) + 1
   Loop Until (Abs(yn - oldyn) < ACCURACY) Or (iter > MAX_ITER)
   
@@ -72,18 +77,16 @@ End Function
 
 'Rectangular sections
 Function YNRECT(Q As Double, Ks As Double, I As Double, b As Double)
-  YNRECT = YNTRAPEZ(Q, Ks, I, b, 0)
+  YNRECT = YNTRAPEZ(Q, Ks, I, b, 0, 0)
 End Function
 
 'Triangular sections
-Function YNTRIANGLE(Q As Double, Ks As Double, I As Double, m As Double)
-  YNTRIANGLE = YNTRAPEZ(Q, Ks, I, 0, m)
+Function YNTRIANGLE(Q As Double, Ks As Double, I As Double, m1 As Double, Optional m2 As Variant)
+  If IsMissing(m2) Then m2 = m1
+  YNTRIANGLE = YNTRAPEZ(Q, Ks, I, 0, m1, m2)
 End Function
 
 'Circular sections
-'In order to avoid an erratic behavior from the solver, we also need  here (again) a good seed
-'We will use then an approx. of the critical water as a seed to workout the water normal depth
-'See the implementation CriticalFlowDepth.bas for more details
 Function YNCIRC(Q As Double, Ks As Double, I As Double, D As Double)
   Dim yn As Double
   Dim iter As Integer
