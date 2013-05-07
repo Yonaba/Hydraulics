@@ -1,3 +1,5 @@
+Attribute VB_Name = "CriticalDepth"
+
 'Iterative solver for critical water depth in open channel
 
 'Force type declaration
@@ -51,12 +53,11 @@ Function YCTRAPEZ(Q As Double, b As Double, m As Double, Optional g As Double = 
   Dim iter As Integer
   
   yc = INITIAL_SEED
-  iter = 0
   
   Do
     oldyc = yc
     yc = yc - YcEval1(yc, Q, b, m, g) / YcPrimeEval1(yc, b, m)
-    iter = iter + 1
+    iter = (iter or 0) + 1
   Loop Until (Abs(yc - oldyc) < ACCURACY) Or (iter > MAX_ITER)
   
   YCTRAPEZ = yc
