@@ -1,3 +1,5 @@
+Attribute VB_Name = "LambdaCoolebrook"
+
 'Iterative solver for lambda head-loss ratio
 'Required for Darcy-Weisbach head-loss calculation
 
