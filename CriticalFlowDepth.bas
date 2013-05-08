@@ -20,14 +20,18 @@ Private Const MAX_ITER = 100
 
 'Type I section
 'Evaluates f(y)
-Private Function YcEval1(y As Double, Q As Double, b As Double, m As Double, g As Double)
-  YcEval1 = y ^ 3 * (b + m * y) ^ 3 / (b + 2 * m * y) - (Q ^ 2 / g)
+Private Function YcEval1(y As Double, Q As Double, b As Double, m1 As Double, m2 As Variant, g As Variant)
+  YcEval1 = (1 / 8) * (2 * b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ _
+    3 * y ^ 3 / (b + y * (m1 + m2)) - Q ^ 2 / g
 End Function
 
 'Evaluates f'(y)
-Private Function YcPrimeEval1(y As Double, b As Double, m As Double)
-  YcPrimeEval1 = 3 * y ^ 2 * (b + m * y) ^ 3 / (b + 2 * m * y) + 3 * y ^ 3 * (b + m * y) ^ 2 * m / _
-    (b + 2 * m * y) - 2 * y ^ 3 * (b + m * y) ^ 3 * m / (b + 2 * m * y) ^ 2
+Private Function YcPrimeEval1(y As Double, b As Double, m1 As Double, m2 As Variant)
+  YcPrimeEval1 = (3 / 8) * (2 * b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ _
+    2 * y ^ 3 * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5) / (b + y * (m1 + m2)) + _
+    (3 / 8) * (2 * b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ 3 * y ^ 2 / _
+    (b + y * (m1 + m2)) - (1 / 8) * (2 * b + y * ((1 + m1 ^ 2) ^ 0.5 + (1 + m2 ^ 2) ^ 0.5)) ^ _
+    3 * y ^ 3 * (m1 + m2) / (b + y * (m1 + m2)) ^ 2
 End Function
 
 'Type II section
@@ -47,17 +51,19 @@ End Function
 'Uses Newton-Raphson method, 4th-order quadratic convergence
 
 'Trapezoid sections
-Function YCTRAPEZ(Q As Double, b As Double, m As Double, Optional g As Double = 9.81)
+Function YCTRAPEZ(Q As Double, b As Double, m1 As Double, Optional m2 As Variant, Optional g As Variant)
   Dim yc As Double
   Dim oldyc As Double
   Dim iter As Integer
   
+  If IsMissing(m2) Then m2 = m1
+  If IsMissing(g) Then g = 9.81
+
   yc = INITIAL_SEED
-  
   Do
     oldyc = yc
-    yc = yc - YcEval1(yc, Q, b, m, g) / YcPrimeEval1(yc, b, m)
-    iter = (iter or 0) + 1
+    yc = yc - YcEval1(yc, Q, b, m1, m2, g) / YcPrimeEval1(yc, b, m1, m2)
+    iter = (iter Or 0) + 1
   Loop Until (Abs(yc - oldyc) < ACCURACY) Or (iter > MAX_ITER)
   
   YCTRAPEZ = yc
@@ -65,12 +71,18 @@ End Function
 
 'Rectangular sections
 Function YCRECT(Q As Double, b As Double, Optional g As Double = 9.81)
-  YCRECT = YCTRAPEZ(Q, b, 0, g)
+  YCRECT = (Q / (b * g ^ 0.5)) ^ (2 / 3)
 End Function
 
 'Triangular sections
-Function YCTRIANGLE(Q As Double, m As Double, Optional g As Double = 9.81)
-  YCTRIANGLE = YCTRAPEZ(Q, 0, m, g)
+Function YCTRIANGLE(Q As Double, m1 As Double, m2 As Variant, Optional g As Variant)
+  If IsMissing(m2) Then m2 = m1
+  If IsMissing(g) Then g = 9.81
+  If m1 = m2 Then
+    YCTRIANGLE = ((2 * Q ^ 2) / ((m1 ^ 2) * g)) ^ (1 / 5)
+  Else
+    YCTRIANGLE = ((2 ^ 3 * Q ^ 2) / (g * (m1 + m2) ^ 2)) ^ (1 / 5)
+  End If
 End Function
 
 'Circular sections
