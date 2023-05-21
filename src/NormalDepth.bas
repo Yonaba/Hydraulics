@@ -10,6 +10,7 @@ Option Explicit
 Private Const ACCURACY = 0.000000001
 Private Const INITIAL_SEED = 0.1
 Private Const MAX_ITER = 100
+Private Const PI = 3.14159265358979
 
 Private Function NDPDebitance(Q As Double, Ks As Double, I As Double) As Double
   NDPDebitance = (Q / (Ks * (I ^ 0.5)))
@@ -94,12 +95,13 @@ Function YNRECTANGLE(Q As Double, Ks As Double, I As Double, b As Double) As Dou
 End Function
 
 Function YNCIRCULAR(Q As Double, Ks As Double, I As Double, D As Double)
-  Dim Yn As Double
+  Dim qn As Double, Yn As Double
   Dim theTa As Double
   Dim oldTheta As Double
   Dim countIter As Integer
   
-  Yn = (Q / (Q * D) ^ 0.5) ^ 0.5
+  qn = Q / (Ks * (I ^ 0.5) * (D ^ (8 / 3)))
+  Yn = ((11 * D) / (5 * PI)) * WorksheetFunction.Asin(1.614 * (qn ^ 0.485))
   theTa = 2 * WorksheetFunction.Acos(1 - (2 * Yn / D))
   
   Do
